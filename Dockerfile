@@ -41,8 +41,19 @@ COPY --from=builder /app/artifacts/api-server/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/lib ./lib
 
-# Copy frontend build to nginx html dir (vite builds to dist/public)
-COPY --from=builder /app/artifacts/hasn/dist/public /usr/share/nginx/html
+# Copy frontend build to nginx html dir
+COPY --from=builder /app/artifacts/hasn/dist ./frontend
+
+# Create fallback index.html if missing
+RUN if [ ! -f /usr/share/nginx/html/index.html ]; then \
+    mkdir -p /usr/share/nginx/html && \
+    echo '<!DOCTYPE html><html><head><title>Loading...</title></head><body>Loading...</body></html>' > /usr/share/nginx/html/index.html; \
+    fi
+
+# Copy frontend to nginx
+RUN if [ -d /app/frontend ]; then \
+    cp -r /app/frontend/* /usr/share/nginx/html/ || true; \
+    fi
 
 # Nginx config: serve frontend + proxy /api → localhost:8080
 COPY nginx.conf /etc/nginx/conf.d/default.conf
