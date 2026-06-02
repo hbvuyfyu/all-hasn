@@ -72,6 +72,12 @@ app.use(
 const uploadsDir = join(process.cwd(), "uploads");
 if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
 app.use("/api/uploads", express.static(uploadsDir));
+
+// Root health check route
+app.get("/", (req, res) => {
+  res.json({ status: "ok", message: "API Server is running" });
+});
+
 app.use("/api", router);
 
 export default app;
