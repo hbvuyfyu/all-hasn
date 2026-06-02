@@ -1,4 +1,4 @@
-FROM node:24-alpine AS base
+FROM node:24-slim AS base
 RUN npm install -g pnpm@10
 WORKDIR /app
 
@@ -25,10 +25,10 @@ RUN pnpm --filter @workspace/api-server run build
 RUN PORT=3000 BASE_PATH=/ pnpm --filter @workspace/hasn run build
 
 # --- final layer: nginx serves frontend + proxies /api to node ---
-FROM nginx:alpine AS runner
+FROM nginx:1.27-bookworm AS runner
 
 # Install node
-RUN apk add --no-cache nodejs npm
+RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm@10
 
 WORKDIR /app
