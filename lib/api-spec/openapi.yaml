@@ -1,0 +1,1686 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: HASN Digital Services Platform API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: auth
+  - name: users
+  - name: services
+  - name: categories
+  - name: wallet
+  - name: banners
+  - name: providers
+  - name: orders
+  - name: settings
+  - name: admin
+  - name: upload
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # Auth
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register with phone and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with phone and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current user
+      responses:
+        "200":
+          description: Logged out
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  # Users (Admin)
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserList"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get a user by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}/block:
+    patch:
+      operationId: blockUser
+      tags: [users]
+      summary: Block or unblock a user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockInput"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}/wallet:
+    patch:
+      operationId: adjustUserWallet
+      tags: [users]
+      summary: Adjust user wallet balance (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletAdjustInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # Categories
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+
+  /categories/{id}:
+    get:
+      operationId: getCategory
+      tags: [categories]
+      summary: Get a category by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+    patch:
+      operationId: updateCategory
+      tags: [categories]
+      summary: Update a category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+    delete:
+      operationId: deleteCategory
+      tags: [categories]
+      summary: Delete a category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Services
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: List services
+      parameters:
+        - in: query
+          name: categoryId
+          schema:
+            type: integer
+        - in: query
+          name: featured
+          schema:
+            type: boolean
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Services
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceList"
+    post:
+      operationId: createService
+      tags: [services]
+      summary: Create a service manually
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+
+  /services/featured:
+    get:
+      operationId: listFeaturedServices
+      tags: [services]
+      summary: List featured/pinned services for homepage
+      responses:
+        "200":
+          description: Featured services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+
+  /services/{id}:
+    get:
+      operationId: getService
+      tags: [services]
+      summary: Get service by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+    patch:
+      operationId: updateService
+      tags: [services]
+      summary: Update a service
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+    delete:
+      operationId: deleteService
+      tags: [services]
+      summary: Delete a service
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Providers
+  /providers:
+    get:
+      operationId: listProviders
+      tags: [providers]
+      summary: List service providers
+      responses:
+        "200":
+          description: Providers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Provider"
+    post:
+      operationId: createProvider
+      tags: [providers]
+      summary: Add a new service provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+
+  /providers/{id}:
+    get:
+      operationId: getProvider
+      tags: [providers]
+      summary: Get provider by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Provider
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+    patch:
+      operationId: updateProvider
+      tags: [providers]
+      summary: Update provider
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+    delete:
+      operationId: deleteProvider
+      tags: [providers]
+      summary: Delete provider
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /providers/{id}/services:
+    get:
+      operationId: listProviderServices
+      tags: [providers]
+      summary: List all services for a specific provider
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Provider services
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceList"
+    patch:
+      operationId: updateProviderServicesVisibility
+      tags: [providers]
+      summary: Bulk update visibility for provider services
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkVisibilityInput"
+      responses:
+        "200":
+          description: Updated count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdatedCount"
+
+  /providers/{id}/sync:
+    post:
+      operationId: syncProviderServices
+      tags: [providers]
+      summary: Sync services from provider API
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Synced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResult"
+
+  # Wallet
+  /wallet:
+    get:
+      operationId: getWallet
+      tags: [wallet]
+      summary: Get current user wallet info
+      responses:
+        "200":
+          description: Wallet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+
+  /wallet/transactions:
+    get:
+      operationId: listTransactions
+      tags: [wallet]
+      summary: List wallet transactions
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionList"
+
+  /wallet/recharge:
+    post:
+      operationId: requestRecharge
+      tags: [wallet]
+      summary: Request wallet recharge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RechargeInput"
+      responses:
+        "201":
+          description: Recharge request submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RechargeRequest"
+
+  /wallet/recharge-requests:
+    get:
+      operationId: listRechargeRequests
+      tags: [wallet]
+      summary: List all recharge requests (admin)
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RechargeRequestList"
+
+  /wallet/recharge-requests/{id}/approve:
+    patch:
+      operationId: approveRecharge
+      tags: [wallet]
+      summary: Approve recharge request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveRechargeInput"
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RechargeRequest"
+
+  /wallet/recharge-requests/{id}/reject:
+    patch:
+      operationId: rejectRecharge
+      tags: [wallet]
+      summary: Reject recharge request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RechargeRequest"
+
+  # Orders
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List orders (mine or all for admin)
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderList"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Place an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get order by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  # Banners
+  /banners:
+    get:
+      operationId: listBanners
+      tags: [banners]
+      summary: List banners
+      responses:
+        "200":
+          description: Banners
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Banner"
+    post:
+      operationId: createBanner
+      tags: [banners]
+      summary: Create banner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BannerInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Banner"
+
+  /banners/{id}:
+    patch:
+      operationId: updateBanner
+      tags: [banners]
+      summary: Update banner
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BannerUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Banner"
+    delete:
+      operationId: deleteBanner
+      tags: [banners]
+      summary: Delete banner
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Settings
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get site settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update site settings (super admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteSettingsUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+
+  # Admin stats
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Admin dashboard stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags: [admin]
+      summary: List audit log entries
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogList"
+
+  # Payment methods
+  /payment-methods:
+    get:
+      operationId: listPaymentMethods
+      tags: [settings]
+      summary: List payment methods for recharge
+      responses:
+        "200":
+          description: Payment methods
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaymentMethod"
+    post:
+      operationId: createPaymentMethod
+      tags: [settings]
+      summary: Create payment method (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentMethodInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentMethod"
+
+  /payment-methods/{id}:
+    patch:
+      operationId: updatePaymentMethod
+      tags: [settings]
+      summary: Update payment method
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentMethodUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentMethod"
+    delete:
+      operationId: deletePaymentMethod
+      tags: [settings]
+      summary: Delete payment method
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    # Auth
+    RegisterInput:
+      type: object
+      required: [phone, password, name]
+      properties:
+        phone:
+          type: string
+        password:
+          type: string
+        name:
+          type: string
+
+    LoginInput:
+      type: object
+      required: [phone, password]
+      properties:
+        phone:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+
+    # User
+    User:
+      type: object
+      required: [id, phone, name, role, isBlocked, walletBalance, createdAt]
+      properties:
+        id:
+          type: integer
+        phone:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [user, admin, super_admin]
+        isBlocked:
+          type: boolean
+        walletBalance:
+          type: number
+        createdAt:
+          type: string
+
+    UserList:
+      type: object
+      required: [users, total, page, limit]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+          enum: [user, admin, super_admin]
+
+    BlockInput:
+      type: object
+      required: [isBlocked]
+      properties:
+        isBlocked:
+          type: boolean
+
+    # Category
+    Category:
+      type: object
+      required: [id, name, sortOrder, isVisible]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+        isVisible:
+          type: boolean
+        parentId:
+          type: ["integer", "null"]
+
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        imageUrl:
+          type: string
+        sortOrder:
+          type: integer
+        parentId:
+          type: integer
+        isVisible:
+          type: boolean
+
+    CategoryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        imageUrl:
+          type: string
+        sortOrder:
+          type: integer
+        isVisible:
+          type: boolean
+
+    # Service
+    Service:
+      type: object
+      required: [id, name, price, isVisible, isFeatured, categoryId]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        price:
+          type: number
+        originalPrice:
+          type: ["number", "null"]
+        isVisible:
+          type: boolean
+        isFeatured:
+          type: boolean
+        categoryId:
+          type: ["integer", "null"]
+        providerId:
+          type: ["integer", "null"]
+        providerServiceId:
+          type: ["string", "null"]
+        profitMargin:
+          type: ["number", "null"]
+
+    ServiceList:
+      type: object
+      required: [services, total, page, limit]
+      properties:
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    ServiceInput:
+      type: object
+      required: [name, price]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        price:
+          type: number
+        categoryId:
+          type: integer
+        providerId:
+          type: integer
+        providerServiceId:
+          type: string
+        isFeatured:
+          type: boolean
+        isVisible:
+          type: boolean
+        profitMargin:
+          type: number
+
+    ServiceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        price:
+          type: number
+        categoryId:
+          type: integer
+        providerId:
+          type: integer
+        providerServiceId:
+          type: string
+        isFeatured:
+          type: boolean
+        isVisible:
+          type: boolean
+        profitMargin:
+          type: number
+
+    WalletAdjustInput:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+        note:
+          type: string
+
+    BulkVisibilityInput:
+      type: object
+      required: [serviceIds, isVisible]
+      properties:
+        serviceIds:
+          type: array
+          items:
+            type: integer
+        isVisible:
+          type: boolean
+
+    UpdatedCount:
+      type: object
+      required: [updated]
+      properties:
+        updated:
+          type: integer
+
+    # Provider
+    Provider:
+      type: object
+      required: [id, name, apiUrl, isActive, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        apiUrl:
+          type: string
+        isActive:
+          type: boolean
+        defaultProfitMargin:
+          type: ["number", "null"]
+        defaultCategoryId:
+          type: ["integer", "null"]
+        lastSyncedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    ProviderInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        apiUrl:
+          type: string
+        apiKey:
+          type: string
+        defaultProfitMargin:
+          type: number
+        defaultCategoryId:
+          type: integer
+
+    ProviderUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        apiUrl:
+          type: string
+        apiKey:
+          type: string
+        defaultProfitMargin:
+          type: number
+        defaultCategoryId:
+          type: ["integer", "null"]
+        isActive:
+          type: boolean
+
+    SyncResult:
+      type: object
+      required: [synced, total]
+      properties:
+        synced:
+          type: integer
+        total:
+          type: integer
+        message:
+          type: string
+
+    # Wallet
+    Wallet:
+      type: object
+      required: [balance, userId]
+      properties:
+        balance:
+          type: number
+        userId:
+          type: integer
+        currency:
+          type: string
+
+    Transaction:
+      type: object
+      required: [id, type, amount, status, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [recharge, purchase, refund]
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [pending, completed, failed, rejected]
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    TransactionList:
+      type: object
+      required: [transactions, total, page, limit]
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    RechargeInput:
+      type: object
+      required: [amount, paymentMethodId]
+      properties:
+        amount:
+          type: number
+        paymentMethodId:
+          type: integer
+        transactionRef:
+          type: string
+        proofImageUrl:
+          type: string
+        notes:
+          type: string
+
+    RechargeRequest:
+      type: object
+      required: [id, userId, amount, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: string
+        userPhone:
+          type: string
+        amount:
+          type: number
+        approvedAmount:
+          type: ["number", "null"]
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        transactionRef:
+          type: ["string", "null"]
+        proofImageUrl:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        paymentMethodId:
+          type: integer
+
+    RechargeRequestList:
+      type: object
+      required: [requests, total, page, limit]
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: "#/components/schemas/RechargeRequest"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    ApproveRechargeInput:
+      type: object
+      required: [approvedAmount]
+      properties:
+        approvedAmount:
+          type: number
+
+    # Orders
+    Order:
+      type: object
+      required: [id, userId, serviceId, serviceName, amount, status, quantity, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        serviceId:
+          type: integer
+        serviceName:
+          type: string
+        serviceImage:
+          type: ["string", "null"]
+        amount:
+          type: number
+        quantity:
+          type: integer
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled]
+        targetId:
+          type: ["string", "null"]
+        providerOrderId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    OrderList:
+      type: object
+      required: [orders, total, page, limit]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    OrderInput:
+      type: object
+      required: [serviceId, quantity, targetId]
+      properties:
+        serviceId:
+          type: integer
+        quantity:
+          type: integer
+        targetId:
+          type: string
+
+    # Upload
+    UploadResult:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+
+    # Banners
+    Banner:
+      type: object
+      required: [id, isActive, sortOrder, frameHeight]
+      properties:
+        id:
+          type: integer
+        imageUrl:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        frameHeight:
+          type: integer
+        title:
+          type: ["string", "null"]
+        linkUrl:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    BannerInput:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        frameHeight:
+          type: integer
+        title:
+          type: string
+        linkUrl:
+          type: string
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    BannerUpdate:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        frameHeight:
+          type: integer
+        title:
+          type: string
+        linkUrl:
+          type: string
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    # Settings
+    SiteSettings:
+      type: object
+      required: [siteName]
+      properties:
+        siteName:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        faviconUrl:
+          type: ["string", "null"]
+        instagramUrl:
+          type: ["string", "null"]
+        whatsappUrl:
+          type: ["string", "null"]
+        facebookUrl:
+          type: ["string", "null"]
+        telegramUrl:
+          type: ["string", "null"]
+        globalProfitMargin:
+          type: ["number", "null"]
+        maintenanceMode:
+          type: boolean
+        currency:
+          type: string
+
+    SiteSettingsUpdate:
+      type: object
+      properties:
+        siteName:
+          type: string
+        logoUrl:
+          type: string
+        faviconUrl:
+          type: string
+        instagramUrl:
+          type: string
+        whatsappUrl:
+          type: string
+        facebookUrl:
+          type: string
+        telegramUrl:
+          type: string
+        globalProfitMargin:
+          type: number
+        maintenanceMode:
+          type: boolean
+        currency:
+          type: string
+
+    PaymentMethod:
+      type: object
+      required: [id, name, isActive]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        details:
+          type: ["string", "null"]
+        instructions:
+          type: ["string", "null"]
+        accountNumber:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    PaymentMethodInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        details:
+          type: string
+        instructions:
+          type: string
+        accountNumber:
+          type: string
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    PaymentMethodUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        details:
+          type: string
+        instructions:
+          type: string
+        accountNumber:
+          type: string
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    # Admin stats
+    AdminStats:
+      type: object
+      required: [totalUsers, totalOrders, totalRevenue, pendingRecharges, totalServices]
+      properties:
+        totalUsers:
+          type: integer
+        totalOrders:
+          type: integer
+        totalRevenue:
+          type: number
+        pendingRecharges:
+          type: integer
+        totalServices:
+          type: integer
+        recentOrders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        revenueThisMonth:
+          type: number
+        newUsersThisMonth:
+          type: integer
+
+    AuditLog:
+      type: object
+      required: [id, action, userId, createdAt]
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        userId:
+          type: ["integer", "null"]
+        userName:
+          type: ["string", "null"]
+        details:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    AuditLogList:
+      type: object
+      required: [logs, total, page, limit]
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLog"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer

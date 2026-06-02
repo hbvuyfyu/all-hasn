@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "HASN - Digital Services Platform"
+version = "1.0.0"
+id = "artifacts/hasn"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24924
+
+[services.development]
+run = "pnpm --filter @workspace/hasn run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hasn", "run", "build" ]
+publicDir = "artifacts/hasn/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24924"
+BASE_PATH = "/"
