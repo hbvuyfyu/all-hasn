@@ -11,7 +11,7 @@ COPY lib/api-zod/package.json lib/api-zod/
 COPY lib/db/package.json lib/db/
 COPY artifacts/api-server/package.json artifacts/api-server/
 COPY artifacts/hasn/package.json artifacts/hasn/
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # --- builder layer ---
 FROM deps AS builder
