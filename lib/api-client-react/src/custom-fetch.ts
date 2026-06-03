@@ -360,7 +360,9 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  // Always include credentials (cookies) so session-based auth works correctly
+  // across same-origin requests proxied through nginx on Railway.
+  const response = await fetch(input, { ...init, method, headers, credentials: "include" });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

@@ -42,7 +42,7 @@ export default function Login() {
           toast({
             variant: "destructive",
             title: "خطأ في تسجيل الدخول",
-            description: err?.response?.data?.error || "رقم الهاتف أو كلمة المرور غير صحيحة",
+            description: err?.data?.error || err?.message || "رقم الهاتف أو كلمة المرور غير صحيحة",
           });
         },
       }
@@ -63,10 +63,10 @@ export default function Login() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
             <div className="h-10 w-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-              <span className="text-xl font-bold text-white leading-none">ح</span>
+              <span className="text-xl font-bold text-white leading-none">H</span>
             </div>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">أهلاً بعودتك</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">أهلاً بعودتك</h1>
           <p className="text-muted-foreground">سجّل الدخول للمتابعة</p>
         </div>
 
@@ -87,7 +87,7 @@ export default function Login() {
                           data-testid="input-phone"
                           type="tel"
                           placeholder="05xxxxxxxx"
-                          className="pr-10 bg-black/5 border-border focus:border-primary text-white placeholder:text-muted-foreground"
+                          className="pr-10 bg-muted/50 border-border focus:border-primary text-foreground placeholder:text-muted-foreground"
                           dir="ltr"
                         />
                       </div>
@@ -111,12 +111,12 @@ export default function Login() {
                           data-testid="input-password"
                           type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
-                          className="pr-10 pl-10 bg-black/5 border-border focus:border-primary text-white placeholder:text-muted-foreground"
+                          className="pr-10 pl-10 bg-muted/50 border-border focus:border-primary text-foreground placeholder:text-muted-foreground"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         >
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -130,7 +130,7 @@ export default function Login() {
               <Button
                 type="submit"
                 data-testid="button-submit"
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5"
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5"
                 disabled={login.isPending}
               >
                 {login.isPending ? "جارٍ الدخول..." : "تسجيل الدخول"}

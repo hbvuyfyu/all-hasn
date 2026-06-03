@@ -46,7 +46,7 @@ export default function Register() {
           toast({
             variant: "destructive",
             title: "فشل إنشاء الحساب",
-            description: err?.response?.data?.error || "حدث خطأ أثناء إنشاء الحساب",
+            description: err?.data?.error || err?.message || "حدث خطأ أثناء إنشاء الحساب",
           });
         },
       }
@@ -67,11 +67,11 @@ export default function Register() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
             <div className="h-10 w-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-              <span className="text-xl font-bold text-white leading-none">ح</span>
+              <span className="text-xl font-bold text-white leading-none">H</span>
             </div>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">إنشاء حساب جديد</h1>
-          <p className="text-muted-foreground">انضم إلى منصة حصن اليوم</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">إنشاء حساب جديد</h1>
+          <p className="text-muted-foreground">انضم إلى منصة HASN اليوم</p>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8 shadow-2xl">
@@ -86,7 +86,7 @@ export default function Register() {
                     <FormControl>
                       <div className="relative">
                         <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input {...field} data-testid="input-name" placeholder="محمد أحمد" className="pr-10 bg-black/5 border-border focus:border-primary text-white placeholder:text-muted-foreground" />
+                        <Input {...field} data-testid="input-name" placeholder="محمد أحمد" className="pr-10 bg-muted/50 border-border focus:border-primary text-foreground placeholder:text-muted-foreground" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -103,7 +103,7 @@ export default function Register() {
                     <FormControl>
                       <div className="relative">
                         <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input {...field} data-testid="input-phone" type="tel" placeholder="05xxxxxxxx" className="pr-10 bg-black/5 border-border focus:border-primary text-white placeholder:text-muted-foreground" dir="ltr" />
+                        <Input {...field} data-testid="input-phone" type="tel" placeholder="05xxxxxxxx" className="pr-10 bg-muted/50 border-border focus:border-primary text-foreground placeholder:text-muted-foreground" dir="ltr" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -120,8 +120,8 @@ export default function Register() {
                     <FormControl>
                       <div className="relative">
                         <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input {...field} data-testid="input-password" type={showPassword ? "text" : "password"} placeholder="••••••••" className="pr-10 pl-10 bg-black/5 border-border focus:border-primary text-white placeholder:text-muted-foreground" />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors">
+                        <Input {...field} data-testid="input-password" type={showPassword ? "text" : "password"} placeholder="••••••••" className="pr-10 pl-10 bg-muted/50 border-border focus:border-primary text-foreground placeholder:text-muted-foreground" />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
@@ -140,7 +140,7 @@ export default function Register() {
                     <FormControl>
                       <div className="relative">
                         <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input {...field} data-testid="input-confirm-password" type="password" placeholder="••••••••" className="pr-10 bg-black/5 border-border focus:border-primary text-white placeholder:text-muted-foreground" />
+                        <Input {...field} data-testid="input-confirm-password" type="password" placeholder="••••••••" className="pr-10 bg-muted/50 border-border focus:border-primary text-foreground placeholder:text-muted-foreground" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -151,7 +151,7 @@ export default function Register() {
               <Button
                 type="submit"
                 data-testid="button-submit"
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5"
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5"
                 disabled={register.isPending}
               >
                 {register.isPending ? "جارٍ إنشاء الحساب..." : "إنشاء الحساب"}

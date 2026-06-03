@@ -26,7 +26,9 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        # Pass through Railway's original X-Forwarded-Proto (https) so Express
+        # correctly treats the connection as secure for cookie handling.
+        proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
         proxy_cache_bypass \$http_upgrade;
         client_max_body_size 20m;
     }
