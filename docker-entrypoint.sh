@@ -7,23 +7,9 @@ LISTEN_PORT="${PORT:-80}"
 API_PORT=8080
 
 # ─── Wait for PostgreSQL ──────────────────────────────────────
-echo "[entrypoint] Waiting for PostgreSQL to be ready..."
+echo "[entrypoint] Starting app (no DB wait)..."
 
-MAX_RETRIES=30
-RETRIES=0
-
-until pg_isready "$DATABASE_URL" >/dev/null 2>&1; do
-  RETRIES=$((RETRIES + 1))
-
-  if [ "$RETRIES" -ge "$MAX_RETRIES" ]; then
-    echo "[entrypoint] ERROR: PostgreSQL not ready after ${MAX_RETRIES} attempts. Exiting."
-    exit 1
-  fi
-
-  echo "[entrypoint] PostgreSQL not ready yet (attempt ${RETRIES}/${MAX_RETRIES})..."
-  sleep 2
-done
-echo "[entrypoint] PostgreSQL is ready."
+npm start
 
 # ─── Initialise database schema ───────────────────────────────
 echo "[entrypoint] Running database schema initialisation..."
