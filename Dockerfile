@@ -2,51 +2,73 @@ FROM node:24-slim AS base
 RUN npm install -g pnpm@10
 WORKDIR /app
 
-# --- deps layer ---
+# ── Deps layer: install all workspace dependencies ─────────────
 FROM base AS deps
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-COPY lib/api-spec/package.json lib/api-spec/
-COPY lib/api-client-react/package.json lib/api-client-react/
-COPY lib/api-zod/package.json lib/api-zod/
-COPY lib/db/package.json lib/db/
-COPY artifacts/api-server/package.json artifacts/api-server/
-COPY artifacts/hasn/package.json artifacts/hasn/
-COPY scripts/package.json scripts/
+COPY lib/api-spec/package.json          lib/api-spec/
+COPY lib/api-client-react/package.json  lib/api-client-react/
+COPY lib/api-zod/package.json           lib/api-zod/
+COPY lib/db/package.json                lib/db/
+COPY artifacts/api-server/package.json  artifacts/api-server/
+COPY artifacts/hasn/package.json        artifacts/hasn/
+COPY scripts/package.json               scripts/
 RUN pnpm install --no-frozen-lockfile
 
-# --- builder layer ---
+# ── Builder layer: codegen + typecheck + build ─────────────────
 FROM deps AS builder
 COPY tsconfig.base.json tsconfig.json ./
-COPY lib/ lib/
+COPY lib/              lib/
 COPY artifacts/api-server/ artifacts/api-server/
-COPY artifacts/hasn/ artifacts/hasn/
-COPY scripts/ scripts/
+COPY artifacts/hasn/       artifacts/hasn/
+COPY scripts/              scripts/
+
+# 1. Generate API client hooks & Zod schemas from OpenAPI spec
 RUN pnpm --filter @workspace/api-spec run codegen
+
+# 2. Build composite libs (api-zod, api-client-react, db)
 RUN pnpm run typecheck:libs
+
+# 3. Build API server → dist/index.mjs
 RUN pnpm --filter @workspace/api-server run build
+
+# 4. Build frontend (Vite) → dist/public
 RUN PORT=3000 BASE_PATH=/ pnpm --filter @workspace/hasn run build
 
-# --- final layer: nginx + node on same base ---
+# ── Runner: nginx + node + psql in a single slim image ─────────
 FROM node:24-slim AS runner
 
-# Install nginx
-RUN apt-get update && apt-get install -y --no-install-recommends nginx && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      nginx \
+      postgresql-client \
+      curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy API server bundle and its runtime dependencies
+# API server bundle + runtime deps
 COPY --from=builder /app/artifacts/api-server/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/lib ./lib
+COPY --from=builder /app/node_modules              ./node_modules
+COPY --from=builder /app/lib                       ./lib
 
-# Copy frontend build to nginx html dir (vite builds to dist/public)
+# Frontend static files
 COPY --from=builder /app/artifacts/hasn/dist/public /usr/share/nginx/html
 
-# Start both services
+# DB schema for first-run initialisation
+COPY schema.sql /app/schema.sql
+
+# Entrypoint
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
+# Uploads directory
+RUN mkdir -p /app/uploads
+
 EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
+  CMD curl -sf http://localhost:${PORT:-80}/api/healthz || exit 1
+
 CMD ["/docker-entrypoint.sh"]

@@ -21,7 +21,7 @@ const PgSession = connectPgSimple(session);
 
 const app: Express = express();
 
-// Trust Railway/nginx reverse proxy so secure cookies work over HTTPS
+// Trust Railway/nginx reverse proxy — required for correct IP, protocol and secure cookies
 app.set("trust proxy", 1);
 
 app.use(
@@ -36,9 +36,7 @@ app.use(
         };
       },
       res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
+        return { statusCode: res.statusCode };
       },
     },
   }),
@@ -53,6 +51,8 @@ app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
+const isProduction = process.env.NODE_ENV === "production";
+
 app.use(
   session({
     store: new PgSession({
@@ -60,11 +60,13 @@ app.use(
       tableName: "session",
       createTableIfMissing: true,
     }),
+    name: "hasn.sid",
     secret: process.env.SESSION_SECRET || "hasn-secret-change-in-production",
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction,
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       sameSite: "lax",
@@ -75,9 +77,9 @@ app.use(
 const uploadsDir = join(process.cwd(), "uploads");
 if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
 app.use("/api/uploads", express.static(uploadsDir));
+
 app.use("/api", router);
 
-// Global error handler — catches async errors thrown in route handlers
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err }, "Unhandled error");
   res.status(500).json({ error: "Internal server error" });

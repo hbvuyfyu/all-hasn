@@ -4,60 +4,62 @@
 
 ---
 
-## النشر السريع (Docker)
+## النشر على Railway (الطريقة الموصى بها)
 
-### المتطلبات
-- Docker + Docker Compose
+### الخطوات
 
-### خطوات النشر
+1. **ارفع المستودع على GitHub** ثم أنشئ مشروعاً جديداً على [railway.app](https://railway.app)
+2. **أضف قاعدة بيانات PostgreSQL** من: New → Database → Add PostgreSQL
+3. **اضبط متغيرات البيئة** في تبويب Variables بخدمتك:
 
-```bash
-# 1. ابنِ وشغّل كل الخدمات دفعةً واحدة
-SESSION_SECRET=اكتب_هنا_سراً_عشوائياً_طويلاً docker compose up -d --build
+| المتغير | القيمة |
+|---------|--------|
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (مرجع Railway التلقائي) |
+| `SESSION_SECRET` | نص عشوائي طويل (`openssl rand -base64 48`) |
+| `NODE_ENV` | `production` |
 
-# 2. المنصة تعمل على
-#    http://your-server-ip
-```
+> **لا تضبط `PORT`** — يضبطه Railway تلقائياً.
 
-أو مع ملف `.env`:
+4. **الـ Deploy**: Railway يكتشف `railway.json` ويبني باستخدام `Dockerfile`.
+   **مخطط قاعدة البيانات يُطبَّق تلقائياً** عند أول إقلاع.
 
-```bash
-# أنشئ .env بهذه القيم
-echo 'POSTGRES_PASSWORD=كلمة_سر_قوية' >> .env
-echo 'SESSION_SECRET=سلسلة_عشوائية_طويلة_جداً' >> .env
+5. **إنشاء أول مستخدم أدمن**: سجّل مستخدماً عادياً ثم شغّل هذا SQL في Railway:
 
-docker compose up -d --build
+```sql
+UPDATE users SET role = 'super_admin' WHERE phone = 'رقم_هاتفك';
 ```
 
 ---
 
-## النشر على Railway
+## النشر المحلي (Docker Compose)
 
-1. أنشئ مشروعاً جديداً على [railway.app](https://railway.app)
-2. أضف خدمة **PostgreSQL** من Plugins
-3. ارفع مجلد ALL_HASN كمستودع أو استخدم Railway CLI
-4. اضبط متغيرات البيئة:
-   - `DATABASE_URL` — يُعطيك إياه Railway تلقائياً من خدمة PostgreSQL
-   - `SESSION_SECRET` — أي سلسلة عشوائية طويلة
-   - `PORT` — يضبطه Railway تلقائياً
-5. شغّل `schema.sql` على قاعدة البيانات في أول نشر
+```bash
+# أنشئ .env من المثال
+cp .env.example .env
+# عدّل SESSION_SECRET في .env
+
+# ابنِ وشغّل
+docker compose up -d --build
+
+# المنصة تعمل على http://localhost
+```
 
 ---
 
 ## هيكل المجلد
 
 ```
-ALL_HASN/
-├── Dockerfile              # بناء API + Frontend في صورة واحدة
-├── docker-compose.yml      # تشغيل كامل (PostgreSQL + App)
-├── nginx.conf              # إعداد nginx للـ SPA + proxy /api
-├── docker-entrypoint.sh    # تشغيل Node.js + nginx معاً
-├── schema.sql              # مخطط قاعدة البيانات الكامل
-├── railway.json            # إعداد Railway
-├── lib/                    # مكتبات مشتركة (API spec, DB schema, ...)
+/
+├── Dockerfile              # بناء متعدد المراحل: API + Frontend في صورة واحدة
+├── docker-compose.yml      # تشغيل كامل محلياً (PostgreSQL + App)
+├── docker-entrypoint.sh    # تهيئة DB + تشغيل Node.js + nginx معاً
+├── schema.sql              # مخطط قاعدة البيانات الكامل (IF NOT EXISTS)
+├── railway.json            # إعداد Railway (health check + restart policy)
+├── .env.example            # متغيرات البيئة المطلوبة
+├── lib/                    # مكتبات مشتركة (API spec, DB schema, Zod schemas)
 ├── artifacts/
-│   ├── api-server/         # خادم Express 5
-│   └── hasn/               # واجهة React + Vite
+│   ├── api-server/         # خادم Express 5 (TypeScript)
+│   └── hasn/               # واجهة React + Vite (Arabic RTL)
 └── scripts/                # سكريبتات مساعدة
 ```
 
@@ -68,26 +70,28 @@ ALL_HASN/
 - **للمستخدمين**: تسجيل بالهاتف + كلمة مرور، محفظة رقمية، شراء خدمات، تتبع الطلبات
 - **لوحة الأدمن**: إدارة المستخدمين والخدمات والأقسام والبنرات ومزودي الخدمة والطلبات وطلبات الشحن
 - **التنفيذ التلقائي**: عند تعيين مزود وService ID للخدمة، يُنفَّذ الطلب تلقائياً عبر API المزود
-- **محفظة ذكية**: الأدمن يتحكم برصيد كل مستخدم مباشرة (إضافة / خصم)
-- **متصفح خدمات المزود**: تحديد وإخفاء/إظهار خدمات المزود بالجملة مع إدخال ID محدد
+- **محفظة ذكية**: الأدمن يتحكم برصيد كل مستخدم مباشرة
+- **متصفح خدمات المزود**: تحديد وإخفاء/إظهار خدمات المزود بالجملة
 
 ---
 
 ## المتغيرات البيئية
 
+انظر `.env.example` لكامل الخيارات المتاحة.
+
 | المتغير | الوصف | مثال |
 |---------|-------|------|
 | `DATABASE_URL` | رابط PostgreSQL | `postgresql://user:pass@host/db` |
-| `SESSION_SECRET` | مفتاح تشفير الجلسات | أي نص عشوائي طويل |
-| `PORT` | منفذ خادم Node.js | `8080` (nginx يستمع على 80) |
+| `SESSION_SECRET` | مفتاح تشفير الجلسات | نص عشوائي طويل |
 | `NODE_ENV` | بيئة التشغيل | `production` |
+| `PORT` | يضبطه Railway تلقائياً | — |
 
 ---
 
 ## Stack التقني
 
 - **Backend**: Node.js 24 + Express 5 + Drizzle ORM + PostgreSQL
-- **Frontend**: React + Vite + Tailwind CSS (Arabic RTL — light theme)
-- **Auth**: جلسات express-session + connect-pg-simple + bcrypt
+- **Frontend**: React + Vite + Tailwind CSS (Arabic RTL — Dark theme)
+- **Auth**: express-session + connect-pg-simple + bcrypt
 - **Build**: esbuild (API) + Vite (Frontend)
-- **Serving**: nginx (SPA + proxy) + Node.js (API on port 8080)
+- **Serving**: nginx (SPA + proxy `/api/`) + Node.js (API on port 8080)

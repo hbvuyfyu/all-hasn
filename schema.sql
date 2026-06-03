@@ -1,15 +1,35 @@
 -- HASN Digital Services Platform — PostgreSQL Schema
--- Generated from Drizzle ORM schema files
+-- Safe to run multiple times: all statements use IF NOT EXISTS
 
--- Enums
-CREATE TYPE user_role AS ENUM ('user', 'admin', 'super_admin');
-CREATE TYPE order_status AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled');
-CREATE TYPE transaction_type AS ENUM ('recharge', 'purchase', 'refund');
-CREATE TYPE transaction_status AS ENUM ('pending', 'completed', 'failed', 'rejected');
-CREATE TYPE recharge_status AS ENUM ('pending', 'approved', 'rejected');
+-- ──────────────────────────────────────────
+-- ENUMS (create only if they don't exist)
+-- ──────────────────────────────────────────
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM ('user', 'admin', 'super_admin');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE order_status AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE transaction_type AS ENUM ('recharge', 'purchase', 'refund');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE transaction_status AS ENUM ('pending', 'completed', 'failed', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE recharge_status AS ENUM ('pending', 'approved', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ──────────────────────────────────────────
+-- TABLES
+-- ──────────────────────────────────────────
 
 -- Users
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id               SERIAL PRIMARY KEY,
   phone            TEXT NOT NULL UNIQUE,
   name             TEXT NOT NULL,
@@ -22,15 +42,16 @@ CREATE TABLE users (
 );
 
 -- Sessions (connect-pg-simple)
-CREATE TABLE sessions (
+CREATE TABLE IF NOT EXISTS session (
   sid    TEXT PRIMARY KEY,
   sess   JSONB NOT NULL,
   expire TIMESTAMP NOT NULL
 );
-CREATE INDEX idx_sessions_expire ON sessions(expire);
+
+CREATE INDEX IF NOT EXISTS idx_session_expire ON session(expire);
 
 -- Categories
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
   id          SERIAL PRIMARY KEY,
   name        TEXT NOT NULL,
   image_url   TEXT,
@@ -42,21 +63,21 @@ CREATE TABLE categories (
 );
 
 -- Providers
-CREATE TABLE providers (
-  id                   SERIAL PRIMARY KEY,
-  name                 TEXT NOT NULL,
-  api_url              TEXT NOT NULL DEFAULT '',
-  api_key              TEXT NOT NULL DEFAULT '',
-  is_active            BOOLEAN NOT NULL DEFAULT TRUE,
+CREATE TABLE IF NOT EXISTS providers (
+  id                    SERIAL PRIMARY KEY,
+  name                  TEXT NOT NULL,
+  api_url               TEXT NOT NULL DEFAULT '',
+  api_key               TEXT NOT NULL DEFAULT '',
+  is_active             BOOLEAN NOT NULL DEFAULT TRUE,
   default_profit_margin NUMERIC(5, 2),
-  default_category_id  INTEGER REFERENCES categories(id),
-  last_synced_at       TIMESTAMP,
-  created_at           TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at           TIMESTAMP NOT NULL DEFAULT NOW()
+  default_category_id   INTEGER REFERENCES categories(id),
+  last_synced_at        TIMESTAMP,
+  created_at            TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at            TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- Services
-CREATE TABLE services (
+CREATE TABLE IF NOT EXISTS services (
   id                  SERIAL PRIMARY KEY,
   name                TEXT NOT NULL,
   description         TEXT,
@@ -74,7 +95,7 @@ CREATE TABLE services (
 );
 
 -- Orders
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
   id                SERIAL PRIMARY KEY,
   user_id           INTEGER NOT NULL REFERENCES users(id),
   service_id        INTEGER NOT NULL REFERENCES services(id),
@@ -90,7 +111,7 @@ CREATE TABLE orders (
 );
 
 -- Transactions
-CREATE TABLE transactions (
+CREATE TABLE IF NOT EXISTS transactions (
   id          SERIAL PRIMARY KEY,
   user_id     INTEGER NOT NULL REFERENCES users(id),
   type        transaction_type NOT NULL,
@@ -102,7 +123,7 @@ CREATE TABLE transactions (
 );
 
 -- Recharge Requests
-CREATE TABLE recharge_requests (
+CREATE TABLE IF NOT EXISTS recharge_requests (
   id                SERIAL PRIMARY KEY,
   user_id           INTEGER NOT NULL REFERENCES users(id),
   amount            NUMERIC(12, 2) NOT NULL,
@@ -118,7 +139,7 @@ CREATE TABLE recharge_requests (
 );
 
 -- Banners
-CREATE TABLE banners (
+CREATE TABLE IF NOT EXISTS banners (
   id           SERIAL PRIMARY KEY,
   image_url    TEXT NOT NULL DEFAULT '',
   images       JSON NOT NULL DEFAULT '[]',
@@ -132,7 +153,7 @@ CREATE TABLE banners (
 );
 
 -- Site Settings
-CREATE TABLE site_settings (
+CREATE TABLE IF NOT EXISTS site_settings (
   id                    SERIAL PRIMARY KEY,
   site_name             TEXT NOT NULL DEFAULT 'HASN',
   logo_url              TEXT,
@@ -148,7 +169,7 @@ CREATE TABLE site_settings (
 );
 
 -- Payment Methods
-CREATE TABLE payment_methods (
+CREATE TABLE IF NOT EXISTS payment_methods (
   id             SERIAL PRIMARY KEY,
   name           TEXT NOT NULL,
   details        TEXT,
@@ -161,7 +182,7 @@ CREATE TABLE payment_methods (
 );
 
 -- Audit Logs
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
   id         SERIAL PRIMARY KEY,
   action     TEXT NOT NULL,
   user_id    INTEGER REFERENCES users(id),
@@ -169,14 +190,16 @@ CREATE TABLE audit_logs (
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Indexes
-CREATE INDEX idx_users_phone ON users(phone);
-CREATE INDEX idx_services_category_id ON services(category_id);
-CREATE INDEX idx_services_provider_id ON services(provider_id);
-CREATE INDEX idx_orders_user_id ON orders(user_id);
-CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_transactions_user_id ON transactions(user_id);
-CREATE INDEX idx_recharge_requests_user_id ON recharge_requests(user_id);
-CREATE INDEX idx_recharge_requests_status ON recharge_requests(status);
-CREATE INDEX idx_banners_is_active ON banners(is_active);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
+-- ──────────────────────────────────────────
+-- INDEXES (safe to run multiple times)
+-- ──────────────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_users_phone              ON users(phone);
+CREATE INDEX IF NOT EXISTS idx_services_category_id    ON services(category_id);
+CREATE INDEX IF NOT EXISTS idx_services_provider_id    ON services(provider_id);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id          ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status           ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id    ON transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_recharge_requests_user  ON recharge_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_recharge_requests_stat  ON recharge_requests(status);
+CREATE INDEX IF NOT EXISTS idx_banners_is_active       ON banners(is_active);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action       ON audit_logs(action);
