@@ -11,6 +11,10 @@ rm -f /etc/nginx/sites-enabled/default
 # Write nginx config with the correct listen port
 mkdir -p /etc/nginx/conf.d
 cat > /etc/nginx/conf.d/app.conf << EOF
+# Increase header/cookie buffer sizes to handle large session cookies
+large_client_header_buffers 8 32k;
+client_header_buffer_size 8k;
+
 server {
     listen ${LISTEN_PORT};
     server_name _;
@@ -31,6 +35,10 @@ server {
         proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
         proxy_cache_bypass \$http_upgrade;
         client_max_body_size 20m;
+        # Increase proxy buffer sizes for large response headers/cookies
+        proxy_buffer_size 16k;
+        proxy_buffers 8 16k;
+        proxy_busy_buffers_size 32k;
     }
 
     location / {
