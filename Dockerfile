@@ -12,7 +12,7 @@ COPY lib/db/package.json lib/db/
 COPY artifacts/api-server/package.json artifacts/api-server/
 COPY artifacts/hasn/package.json artifacts/hasn/
 COPY scripts/package.json scripts/
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # --- builder layer ---
 FROM deps AS builder
