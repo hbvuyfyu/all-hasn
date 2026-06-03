@@ -8,24 +8,21 @@ API_PORT=8080
 
 # ─── Wait for PostgreSQL ──────────────────────────────────────
 echo "[entrypoint] Waiting for PostgreSQL to be ready..."
+
 MAX_RETRIES=30
 RETRIES=0
 
-# Parse host from DATABASE_URL: postgresql://user:pass@host:port/db
-DB_HOST=$(echo "$DATABASE_URL" | sed -E 's|.*@([^:/]+).*|\1|')
-DB_PORT=$(echo "$DATABASE_URL" | sed -E 's|.*:([0-9]+)/.*|\1|')
-DB_PORT="${DB_PORT:-5432}"
-
-until pg_isready -h "$DB_HOST" -p "$DB_PORT" -q 2>/dev/null; do
+until pg_isready "$DATABASE_URL" >/dev/null 2>&1; do
   RETRIES=$((RETRIES + 1))
+
   if [ "$RETRIES" -ge "$MAX_RETRIES" ]; then
     echo "[entrypoint] ERROR: PostgreSQL not ready after ${MAX_RETRIES} attempts. Exiting."
     exit 1
   fi
+
   echo "[entrypoint] PostgreSQL not ready yet (attempt ${RETRIES}/${MAX_RETRIES})..."
   sleep 2
 done
-
 echo "[entrypoint] PostgreSQL is ready."
 
 # ─── Initialise database schema ───────────────────────────────
