@@ -5,8 +5,12 @@ set -e
 LISTEN_PORT="${PORT:-80}"
 API_PORT=8080
 
+# Remove default nginx site config if it exists
+rm -f /etc/nginx/sites-enabled/default
+
 # Write nginx config with the correct listen port
-cat > /etc/nginx/conf.d/default.conf << EOF
+mkdir -p /etc/nginx/conf.d
+cat > /etc/nginx/conf.d/app.conf << EOF
 server {
     listen ${LISTEN_PORT};
     server_name _;
@@ -43,4 +47,4 @@ EOF
 PORT=${API_PORT} node --enable-source-maps /app/dist/index.mjs &
 
 # Start nginx in foreground
-nginx -g "daemon off;"
+exec nginx -g "daemon off;"

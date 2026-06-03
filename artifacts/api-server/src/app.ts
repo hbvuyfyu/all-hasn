@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import session from "express-session";
@@ -21,6 +21,9 @@ const PgSession = connectPgSimple(session);
 
 const app: Express = express();
 
+// Trust Railway/nginx reverse proxy so secure cookies work over HTTPS
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
@@ -42,7 +45,7 @@ app.use(
 );
 
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => callback(null, origin || true),
   credentials: true,
 }));
 
@@ -64,7 +67,7 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: "lax",
     },
   })
 );
@@ -73,5 +76,11 @@ const uploadsDir = join(process.cwd(), "uploads");
 if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
 app.use("/api/uploads", express.static(uploadsDir));
 app.use("/api", router);
+
+// Global error handler — catches async errors thrown in route handlers
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ err }, "Unhandled error");
+  res.status(500).json({ error: "Internal server error" });
+});
 
 export default app;

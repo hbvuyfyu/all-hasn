@@ -26,7 +26,11 @@ import AdminAuditLogs from "@/pages/admin/audit-logs";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: (failureCount, error: any) => {
+        // Never retry on 401/403 — those are auth errors, not transient failures
+        if (error?.status === 401 || error?.status === 403) return false;
+        return failureCount < 1;
+      },
       refetchOnWindowFocus: false,
     },
   },

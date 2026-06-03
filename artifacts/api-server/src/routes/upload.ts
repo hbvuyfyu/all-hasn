@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
+import { requireAuth } from "../middlewares/auth.js";
 
 const uploadsDir = join(process.cwd(), "uploads");
 if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
@@ -26,7 +27,7 @@ const upload = multer({
 
 const router = Router();
 
-router.post("/", upload.single("file"), (req, res) => {
+router.post("/", requireAuth, upload.single("file"), (req, res) => {
   if (!req.file) {
     res.status(400).json({ error: "No file uploaded" });
     return;
