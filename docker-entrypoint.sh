@@ -6,11 +6,6 @@ set -e
 LISTEN_PORT="${PORT:-80}"
 API_PORT=8080
 
-# ─── Wait for PostgreSQL ──────────────────────────────────────
-echo "[entrypoint] Starting app (no DB wait)..."
-
-npm start
-
 # ─── Initialise database schema ───────────────────────────────
 echo "[entrypoint] Running database schema initialisation..."
 psql "$DATABASE_URL" -f /app/schema.sql -v ON_ERROR_STOP=0 --quiet
@@ -20,7 +15,7 @@ echo "[entrypoint] Database schema initialised."
 rm -f /etc/nginx/sites-enabled/default
 mkdir -p /etc/nginx/conf.d
 
-cat > /etc/nginx/conf.d/app.conf << EOF
+cat > /etc/nginx/conf.d/app.conf << NGINX
 # Increase header/cookie buffer sizes to handle session cookies
 large_client_header_buffers 8 32k;
 client_header_buffer_size 8k;
@@ -41,11 +36,9 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        # Pass Railway's original protocol (https) so Express sets secure cookies correctly
         proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
         proxy_cache_bypass \$http_upgrade;
         client_max_body_size 20m;
-        # Proxy buffer sizes for large headers/cookies
         proxy_buffer_size     16k;
         proxy_buffers         8 16k;
         proxy_busy_buffers_size 32k;
@@ -70,7 +63,7 @@ server {
         add_header Cache-Control "public, immutable";
     }
 }
-EOF
+NGINX
 
 # ─── Start API server ─────────────────────────────────────────
 echo "[entrypoint] Starting API server on port ${API_PORT}..."
