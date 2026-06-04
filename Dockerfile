@@ -1,74 +1,80 @@
-FROM node:24-slim AS base
-RUN npm install -g pnpm@10
-WORKDIR /app
+#!/bin/sh
+set -e
 
-# ── Deps layer: install all workspace dependencies ─────────────
-FROM base AS deps
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-COPY lib/api-spec/package.json          lib/api-spec/
-COPY lib/api-client-react/package.json  lib/api-client-react/
-COPY lib/api-zod/package.json           lib/api-zod/
-COPY lib/db/package.json                lib/db/
-COPY artifacts/api-server/package.json  artifacts/api-server/
-COPY artifacts/hasn/package.json        artifacts/hasn/
-COPY scripts/package.json               scripts/
-RUN pnpm install --no-frozen-lockfile
+# ─── Ports ────────────────────────────────────────────────────
+# Railway sets $PORT for the public-facing port; default to 80.
+LISTEN_PORT="${PORT:-80}"
+API_PORT=3001   # fixed internal port — never conflicts with $PORT
 
-# ── Builder layer: codegen + typecheck + build ─────────────────
-FROM deps AS builder
-COPY tsconfig.base.json tsconfig.json ./
-COPY lib/              lib/
-COPY artifacts/api-server/ artifacts/api-server/
-COPY artifacts/hasn/       artifacts/hasn/
-COPY scripts/              scripts/
+# ─── Initialise database schema ───────────────────────────────
+echo "[entrypoint] Running database schema initialisation..."
+psql "$DATABASE_URL" -f /app/schema.sql -v ON_ERROR_STOP=0 --quiet
+echo "[entrypoint] Database schema initialised."
 
-# 1. Generate API client hooks & Zod schemas from OpenAPI spec
-RUN pnpm --filter @workspace/api-spec run codegen
+# ─── Write nginx config ───────────────────────────────────────
+rm -f /etc/nginx/sites-enabled/default
+mkdir -p /etc/nginx/conf.d
 
-# 2. Build composite libs (api-zod, api-client-react, db)
-RUN pnpm run typecheck:libs
+cat > /etc/nginx/conf.d/app.conf << NGINX
+large_client_header_buffers 8 32k;
+client_header_buffer_size 8k;
 
-# 3. Build API server → dist/index.mjs
-RUN pnpm --filter @workspace/api-server run build
+server {
+    listen ${LISTEN_PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+    charset utf-8;
 
-# 4. Build frontend (Vite) → dist/public
-RUN PORT=3000 BASE_PATH=/ pnpm --filter @workspace/hasn run build
+    location /api/ {
+        proxy_pass http://127.0.0.1:${API_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
+        proxy_cache_bypass \$http_upgrade;
+        client_max_body_size 20m;
+        proxy_buffer_size     16k;
+        proxy_buffers         8 16k;
+        proxy_busy_buffers_size 32k;
+    }
 
-# ── Runner: nginx + node + psql in a single slim image ─────────
-FROM node:24-slim AS runner
+    location /api/uploads/ {
+        alias /app/uploads/;
+        expires 7d;
+        add_header Cache-Control "public";
+    }
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      nginx \
-      postgresql-client \
-      curl \
-    && rm -rf /var/lib/apt/lists/*
+    location / {
+        try_files \$uri \$uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
 
-WORKDIR /app
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+NGINX
 
-ENV NODE_ENV=production
+# ─── Start API server ─────────────────────────────────────────
+echo "[entrypoint] Starting API server on port ${API_PORT}..."
+PORT=${API_PORT} node --enable-source-maps /app/dist/index.mjs &
+API_PID=$!
 
-# API server bundle + runtime deps
-COPY --from=builder /app/artifacts/api-server/dist ./dist
-COPY --from=builder /app/node_modules              ./node_modules
-COPY --from=builder /app/lib                       ./lib
+# ─── Wait for API to be ready before starting nginx ──────────
+echo "[entrypoint] Waiting for API server to be ready..."
+for i in $(seq 1 30); do
+    if curl -sf http://127.0.0.1:${API_PORT}/api/healthz > /dev/null 2>&1; then
+        echo "[entrypoint] API server is ready."
+        break
+    fi
+    sleep 1
+done
 
-# Frontend static files
-COPY --from=builder /app/artifacts/hasn/dist/public /usr/share/nginx/html
-
-# DB schema for first-run initialisation
-COPY schema.sql /app/schema.sql
-
-# Entrypoint
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-
-# Uploads directory
-RUN mkdir -p /app/uploads
-
-EXPOSE 80
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
-  CMD curl -sf http://localhost:${PORT:-80}/api/healthz || exit 1
-
-CMD ["/docker-entrypoint.sh"]
+# ─── Start nginx ──────────────────────────────────────────────
+echo "[entrypoint] Starting nginx on port ${LISTEN_PORT}..."
+exec nginx -g "daemon off;"
