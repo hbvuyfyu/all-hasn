@@ -1,7 +1,7 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, jsonb, timestamp } from "drizzle-orm/pg-core";
 
 export const sessionsTable = pgTable("session", {
   sid: text("sid").primaryKey(),
-  sess: text("sess").notNull(),
+  sess: jsonb("sess").notNull(),
   expire: timestamp("expire").notNull(),
 });

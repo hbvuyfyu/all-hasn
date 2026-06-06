@@ -88,7 +88,7 @@ router.post("/logout", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
     await new Promise<void>((resolve) => req.session.destroy(() => resolve()));
-    res.clearCookie("connect.sid");
+    res.clearCookie("hasn.sid", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" });
     await auditLog("user_logout", userId);
     res.json({ success: true });
   } catch (err) {

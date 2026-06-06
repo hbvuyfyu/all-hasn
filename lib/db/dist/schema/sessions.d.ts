@@ -22,16 +22,16 @@ export declare const sessionsTable: import("drizzle-orm/pg-core").PgTableWithCol
         sess: import("drizzle-orm/pg-core").PgColumn<{
             name: "sess";
             tableName: "session";
-            dataType: "string";
-            columnType: "PgText";
-            data: string;
-            driverParam: string;
+            dataType: "json";
+            columnType: "PgJsonb";
+            data: unknown;
+            driverParam: unknown;
             notNull: true;
             hasDefault: false;
             isPrimaryKey: false;
             isAutoincrement: false;
             hasRuntimeDefault: false;
-            enumValues: [string, ...string[]];
+            enumValues: undefined;
             baseColumn: never;
             identity: undefined;
             generated: undefined;

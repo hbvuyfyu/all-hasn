@@ -28,18 +28,17 @@ RUN pnpm --filter @workspace/api-spec run codegen
 # 2. Build composite libs (api-zod, api-client-react, db)
 RUN pnpm run typecheck:libs
 
-# 3. Build API server → dist/index.mjs
+# 3. Build API server -> dist/index.mjs
 RUN pnpm --filter @workspace/api-server run build
 
-# 4. Build frontend (Vite) → dist/public
+# 4. Build frontend (Vite) -> dist/public
 RUN PORT=3000 BASE_PATH=/ pnpm --filter @workspace/hasn run build
 
-# ── Runner: nginx + node + psql in a single slim image ─────────
+# ── Runner: single Node.js image (no nginx needed) ─────────────
 FROM node:24-slim AS runner
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      nginx \
       postgresql-client \
       curl \
     && rm -rf /var/lib/apt/lists/*
@@ -48,27 +47,24 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# API server bundle + runtime deps
-COPY --from=builder /app/artifacts/api-server/dist ./dist
-COPY --from=builder /app/node_modules              ./node_modules
-COPY --from=builder /app/lib                       ./lib
+# API server bundle (esbuild includes all workspace code)
+COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
 
-# Frontend static files
-COPY --from=builder /app/artifacts/hasn/dist/public /usr/share/nginx/html
+# Frontend static files (served by Express in production)
+COPY --from=builder /app/artifacts/hasn/dist/public ./artifacts/hasn/dist/public
+
+# Runtime node_modules for externalized packages (pg, bcryptjs, etc.)
+COPY --from=builder /app/node_modules ./node_modules
 
 # DB schema for first-run initialisation
 COPY schema.sql /app/schema.sql
 
-# Entrypoint
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-
 # Uploads directory
 RUN mkdir -p /app/uploads
 
-EXPOSE 80
+EXPOSE 3001
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
-  CMD curl -sf http://localhost:${PORT:-80}/api/healthz || exit 1
+  CMD curl -sf http://localhost:3001/api/healthz || exit 1
 
-CMD ["/docker-entrypoint.sh"]
+CMD ["node", "--enable-source-maps", "/app/artifacts/api-server/dist/index.mjs"]

@@ -23,9 +23,9 @@ services:
       DATABASE_URL: postgresql://hasn:${POSTGRES_PASSWORD:-hasnsecret}@postgres:5432/hasn
       SESSION_SECRET: ${SESSION_SECRET:-change-this-secret-in-production}
       NODE_ENV: production
-      PORT: 8080
+      PORT: 3001
     ports:
-      - "80:80"
+      - "3001:3001"
     depends_on:
       - postgres
 

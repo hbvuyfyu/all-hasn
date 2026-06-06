@@ -179,13 +179,13 @@ export declare const bannersTable: import("drizzle-orm/pg-core").PgTableWithColu
     dialect: "pg";
 }>;
 export declare const insertBannerSchema: z.ZodObject<{
-    isActive: z.ZodOptional<z.ZodBoolean>;
     imageUrl: z.ZodOptional<z.ZodString>;
+    sortOrder: z.ZodOptional<z.ZodInt>;
+    isActive: z.ZodOptional<z.ZodBoolean>;
     images: z.ZodOptional<z.ZodType<string[], string[], z.core.$ZodTypeInternals<string[], string[]>>>;
     frameHeight: z.ZodOptional<z.ZodInt>;
     title: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     linkUrl: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    sortOrder: z.ZodOptional<z.ZodInt>;
 }, {
     out: {};
     in: {};

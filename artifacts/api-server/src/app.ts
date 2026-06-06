@@ -78,7 +78,27 @@ const uploadsDir = join(process.cwd(), "uploads");
 if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
 app.use("/api/uploads", express.static(uploadsDir));
 
+
+// Serve frontend static files in production
+if (isProduction) {
+  const frontendPath = join(process.cwd(), "artifacts/hasn/dist/public");
+  if (existsSync(frontendPath)) {
+    app.use(express.static(frontendPath));
+  }
+}
+
 app.use("/api", router);
+
+// SPA fallback: serve index.html for all non-API, non-static routes
+// Must be after API routes so they take precedence
+if (isProduction) {
+  const frontendPath = join(process.cwd(), "artifacts/hasn/dist/public");
+  if (existsSync(frontendPath)) {
+    app.get("*", (_req, res) => {
+      res.sendFile(join(frontendPath, "index.html"));
+    });
+  }
+}
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err }, "Unhandled error");
